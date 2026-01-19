@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine as gobuild
+FROM golang:1.16-alpine AS gobuild
 
 WORKDIR /build
 ADD . /build
@@ -6,7 +6,7 @@ ADD . /build
 RUN go get -d -v ./...
 RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o ./s3driver ./cmd/s3driver
 
-FROM debian:buster-slim
+FROM debian:stable-slim
 LABEL maintainers="Cyrill Troxler <cyrilltroxler@gmail.com>"
 LABEL description="csi-s3 slim image"
 
