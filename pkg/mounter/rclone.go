@@ -15,6 +15,7 @@ type rcloneMounter struct {
 	region          string
 	accessKeyID     string
 	secretAccessKey string
+	cfg             *s3.Config
 }
 
 const (
@@ -28,6 +29,7 @@ func newRcloneMounter(meta *s3.FSMeta, cfg *s3.Config) (Mounter, error) {
 		region:          cfg.Region,
 		accessKeyID:     cfg.AccessKeyID,
 		secretAccessKey: cfg.SecretAccessKey,
+		cfg:             cfg,
 	}, nil
 }
 
@@ -40,6 +42,34 @@ func (rclone *rcloneMounter) Unstage(stageTarget string) error {
 }
 
 func (rclone *rcloneMounter) Mount(source string, target string) error {
+	vfsMode := "writes"
+	vfsMaxSize := "1G"
+	vfsMaxAge := "12h"
+	timeout := "1m"
+	contimeout := "30s"
+	retries := 5
+
+	if rclone.cfg != nil {
+		if rclone.cfg.RcloneVfsCacheMode != "" {
+			vfsMode = rclone.cfg.RcloneVfsCacheMode
+		}
+		if rclone.cfg.RcloneVfsCacheMaxSize != "" {
+			vfsMaxSize = rclone.cfg.RcloneVfsCacheMaxSize
+		}
+		if rclone.cfg.RcloneVfsCacheMaxAge != "" {
+			vfsMaxAge = rclone.cfg.RcloneVfsCacheMaxAge
+		}
+		if rclone.cfg.RcloneTimeout != "" {
+			timeout = rclone.cfg.RcloneTimeout
+		}
+		if rclone.cfg.RcloneContimeout != "" {
+			contimeout = rclone.cfg.RcloneContimeout
+		}
+		if rclone.cfg.RcloneRetries != 0 {
+			retries = rclone.cfg.RcloneRetries
+		}
+	}
+
 	args := []string{
 		"mount",
 		fmt.Sprintf(":s3:%s", path.Join(rclone.meta.BucketName, rclone.meta.Prefix, rclone.meta.FSPath)),
@@ -50,8 +80,12 @@ func (rclone *rcloneMounter) Mount(source string, target string) error {
 		fmt.Sprintf("--s3-region=%s", rclone.region),
 		fmt.Sprintf("--s3-endpoint=%s", rclone.url),
 		"--allow-other",
-		// TODO: make this configurable
-		"--vfs-cache-mode=writes",
+		fmt.Sprintf("--vfs-cache-mode=%s", vfsMode),
+		fmt.Sprintf("--vfs-cache-max-size=%s", vfsMaxSize),
+		fmt.Sprintf("--vfs-cache-max-age=%s", vfsMaxAge),
+		fmt.Sprintf("--timeout=%s", timeout),
+		fmt.Sprintf("--contimeout=%s", contimeout),
+		fmt.Sprintf("--retries=%d", retries),
 	}
 
 	if rclone.meta.Gid != 0 {

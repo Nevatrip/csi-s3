@@ -211,3 +211,52 @@ Currently the driver is tested by the [CSI Sanity Tester](https://github.com/kub
 ```bash
 make test
 ```
+
+## Recommended configuration for reliability (rclone )
+
+When S3 becomes temporarily unavailable, using a userspace caching mounter reduces the chance
+that application IO will block indefinitely. Below are recommended options and examples.
+
+### rclone (recommended for general purpose)
+
+Use `--vfs-cache-mode=writes` (or `full` for more aggressive caching) so writes are buffered
+locally and uploaded asynchronously. Tune cache size and time to match node disk capacity.
+
+Example rclone flags:
+
+```
+--daemon
+--s3-provider=AWS
+--s3-env-auth=true
+--vfs-cache-mode=writes
+--vfs-cache-max-size=1G
+--vfs-cache-max-age=12h
+--timeout=1m
+--contimeout=30s
+--retries=5
+--allow-other
+```
+
+We expose these options as volume attributes so you can set them per-volume. Supported volume attributes:
+
+- `rclone.vfsCacheMode` (off|minimal|writes|full)
+- `rclone.vfsCacheMaxSize` (e.g. `1G`)
+- `rclone.vfsCacheMaxAge` (e.g. `12h`)
+- `rclone.timeout` (e.g. `1m`)
+- `rclone.contimeout` (e.g. `30s`)
+- `rclone.retries` (integer)
+
+Example StorageClass parameters / volume attributes (per-volume):
+
+```yaml
+parameters:
+  mounter: rclone
+  bucket: some-existing-bucket-name
+  # per-volume attributes (example usage depends on your provisioner integration)
+  rclone.vfsCacheMode: writes
+  rclone.vfsCacheMaxSize: 1G
+  rclone.vfsCacheMaxAge: 12h
+  rclone.timeout: 1m
+  rclone.contimeout: 30s
+  rclone.retries: "5"
+```

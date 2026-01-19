@@ -31,6 +31,13 @@ type Config struct {
 	Region          string
 	Endpoint        string
 	Mounter         string
+
+	RcloneVfsCacheMode    string
+	RcloneVfsCacheMaxSize string
+	RcloneVfsCacheMaxAge  string
+	RcloneTimeout         string
+	RcloneContimeout      string
+	RcloneRetries         int
 }
 
 type FSMeta struct {
@@ -45,7 +52,7 @@ type FSMeta struct {
 }
 
 func NewClient(cfg *Config) (*s3Client, error) {
-	var client = &s3Client{}
+	client := &s3Client{}
 
 	client.Config = cfg
 	u, err := url.Parse(client.Config.Endpoint)

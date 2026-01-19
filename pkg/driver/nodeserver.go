@@ -88,6 +88,8 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		return nil, err
 	}
 
+	mergeVolumeAttrsIntoConfig(req.GetVolumeContext(), s3.Config)
+
 	mounter, err := mounter.New(meta, s3.Config)
 	if err != nil {
 		return nil, err
@@ -154,6 +156,9 @@ func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 	if err != nil {
 		return nil, err
 	}
+
+	mergeVolumeAttrsIntoConfig(req.GetVolumeContext(), client.Config)
+
 	mounter, err := mounter.New(meta, client.Config)
 	if err != nil {
 		return nil, err
@@ -206,7 +211,7 @@ func checkMount(targetPath string) (bool, error) {
 	notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err = os.MkdirAll(targetPath, 0750); err != nil {
+			if err = os.MkdirAll(targetPath, 0o750); err != nil {
 				return false, err
 			}
 			notMnt = true
@@ -215,4 +220,41 @@ func checkMount(targetPath string) (bool, error) {
 		}
 	}
 	return notMnt, nil
+}
+
+// mergeVolumeAttrsIntoConfig maps known volume attributes into s3.Config fields.
+// Supported keys (example):
+//   - rclone.vfsCacheMode
+//   - rclone.vfsCacheMaxSize
+//   - rclone.vfsCacheMaxAge
+//   - rclone.timeout
+//   - rclone.contimeout
+//   - rclone.retries
+func mergeVolumeAttrsIntoConfig(attrs map[string]string, cfg *s3.Config) {
+	if cfg == nil || attrs == nil {
+		return
+	}
+	if v, ok := attrs["rclone.vfsCacheMode"]; ok {
+		cfg.RcloneVfsCacheMode = v
+	}
+	if v, ok := attrs["rclone.vfsCacheMaxSize"]; ok {
+		cfg.RcloneVfsCacheMaxSize = v
+	}
+	if v, ok := attrs["rclone.vfsCacheMaxAge"]; ok {
+		cfg.RcloneVfsCacheMaxAge = v
+	}
+	if v, ok := attrs["rclone.timeout"]; ok {
+		cfg.RcloneTimeout = v
+	}
+	if v, ok := attrs["rclone.contimeout"]; ok {
+		cfg.RcloneContimeout = v
+	}
+	if v, ok := attrs["rclone.retries"]; ok {
+		// parse int safely
+		var n int
+		_, err := fmt.Sscanf(v, "%d", &n)
+		if err == nil {
+			cfg.RcloneRetries = n
+		}
+	}
 }
