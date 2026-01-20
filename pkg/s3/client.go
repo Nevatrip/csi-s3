@@ -38,6 +38,7 @@ type Config struct {
 	RcloneTimeout         string
 	RcloneContimeout      string
 	RcloneRetries         int
+	RcloneLowLevelRetries int
 }
 
 type FSMeta struct {

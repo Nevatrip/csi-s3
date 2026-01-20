@@ -230,6 +230,7 @@ func checkMount(targetPath string) (bool, error) {
 //   - rclone.timeout
 //   - rclone.contimeout
 //   - rclone.retries
+//   - rclone.lowLevelRetries
 func mergeVolumeAttrsIntoConfig(attrs map[string]string, cfg *s3.Config) {
 	if cfg == nil || attrs == nil {
 		return
@@ -255,6 +256,14 @@ func mergeVolumeAttrsIntoConfig(attrs map[string]string, cfg *s3.Config) {
 		_, err := fmt.Sscanf(v, "%d", &n)
 		if err == nil {
 			cfg.RcloneRetries = n
+		}
+	}
+	if v, ok := attrs["rclone.lowLevelRetries"]; ok {
+		// parse int safely
+		var n int
+		_, err := fmt.Sscanf(v, "%d", &n)
+		if err == nil {
+			cfg.RcloneLowLevelRetries = n
 		}
 	}
 }

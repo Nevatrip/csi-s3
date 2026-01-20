@@ -48,6 +48,7 @@ func (rclone *rcloneMounter) Mount(source string, target string) error {
 	timeout := "1m"
 	contimeout := "30s"
 	retries := 5
+	lowLevelRetries := 10
 
 	if rclone.cfg != nil {
 		if rclone.cfg.RcloneVfsCacheMode != "" {
@@ -68,6 +69,9 @@ func (rclone *rcloneMounter) Mount(source string, target string) error {
 		if rclone.cfg.RcloneRetries != 0 {
 			retries = rclone.cfg.RcloneRetries
 		}
+		if rclone.cfg.RcloneLowLevelRetries != 0 {
+			lowLevelRetries = rclone.cfg.RcloneLowLevelRetries
+		}
 	}
 
 	args := []string{
@@ -86,6 +90,7 @@ func (rclone *rcloneMounter) Mount(source string, target string) error {
 		fmt.Sprintf("--timeout=%s", timeout),
 		fmt.Sprintf("--contimeout=%s", contimeout),
 		fmt.Sprintf("--retries=%d", retries),
+		fmt.Sprintf("--low-level-retries=%d", lowLevelRetries),
 	}
 
 	if rclone.meta.Gid != 0 {
